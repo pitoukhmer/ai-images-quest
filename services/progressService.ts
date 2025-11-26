@@ -109,7 +109,6 @@ export const unlockReward = (user: UserProfile, reward: MysteryReward): UserProf
 
   if (reward.type === 'XP') {
     // XP is handled by addXpToUser, but we return the user structure here for consistency if needed
-    // Usually the caller will handle XP separate, but inventory items happen here
   } else if (reward.type === 'THEME') {
     const theme = reward.value as AppTheme;
     if (!user.inventory.themes.includes(theme)) {
@@ -141,6 +140,7 @@ export const unlockReward = (user: UserProfile, reward: MysteryReward): UserProf
 };
 
 export const getDailyChallengePrompt = (): string => {
+  // Expanded list for monthly variety (31 Unique Prompts)
   const prompts = [
     "A futuristic city made of candy canes and chocolate rivers",
     "A dragon reading a book in a cozy library",
@@ -149,12 +149,39 @@ export const getDailyChallengePrompt = (): string => {
     "A giant castle built on top of a fluffy white cloud",
     "A penguin wearing a tuxedo at a fancy dinner party",
     "A bicycle with square wheels riding on a rainbow road",
+    "A tree house inside a giant glowing mushroom",
+    "A polar bear wearing sunglasses surfing on a glacier",
+    "A family of ducks crossing a busy street in space",
+    "A whale flying in the sky with hot air balloons attached",
+    "A gentle monster eating cereal with a tiny spoon",
+    "A squirrel knight riding a corgi into battle",
+    "A house made entirely of stacked books in a forest",
+    "A giraffe wearing a long scarf skiing down a mountain",
+    "An octopus playing four drums and four guitars at once",
+    "A car shaped like a giant hamburger driving on a french fry road",
+    "A snowman sunbathing on a tropical beach with a drink",
+    "A group of aliens having a picnic on the moon",
+    "A superhero hamster lifting a giant peanut",
+    "A clock tower melting like ice cream in the sun",
+    "A train traveling underwater through a coral reef",
+    "A fox and a rabbit playing chess in a meadow",
+    "A giant robot holding a bouquet of balloons",
+    "A city where all the buildings are giant fruit",
+    "A dinosaur painting a portrait of a meteor",
+    "A submarine with butterfly wings flying in the air",
+    "A wizard casting a spell to make it rain donuts",
+    "A soccer match played by robots on Mars",
+    "A pirate ship sailing on a sea of clouds",
+    "A koala djing at a jungle party"
   ];
+  
   const now = new Date();
   const start = new Date(now.getFullYear(), 0, 0);
   const diff = now.getTime() - start.getTime();
   const oneDay = 1000 * 60 * 60 * 24;
   const day = Math.floor(diff / oneDay);
+  
+  // Use day of year to deterministically pick a prompt
   return prompts[day % prompts.length];
 };
 
