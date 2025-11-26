@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Package, Star, Palette, User, Smile } from 'lucide-react';
 import { Button, Confetti } from './Shared';

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Layout } from './components/Layout';
 import { GameContainer } from './components/GameContainer';
@@ -47,7 +46,9 @@ export const App: React.FC = () => {
   const handleScoreUpdate = (points: number) => {
     const xpGained = Math.ceil(points / 2); 
     const { user: updatedUser, leveledUp } = addXpToUser(user, xpGained);
-    if (leveledUp) playSound('correct');
+    if (leveledUp) {
+      playSound('levelup');
+    }
     setUser(updatedUser);
   };
 
@@ -56,7 +57,8 @@ export const App: React.FC = () => {
     
     // If XP reward, add XP
     if (reward.type === 'XP') {
-       const { user: xpUser } = addXpToUser(updatedUser, Number(reward.value));
+       const { user: xpUser, leveledUp } = addXpToUser(updatedUser, Number(reward.value));
+       if (leveledUp) playSound('levelup');
        setUser(xpUser);
     } else {
        setUser(updatedUser);
@@ -132,8 +134,9 @@ export const App: React.FC = () => {
                     <Calendar size={32} />
                   </div>
                   <div className="text-left flex-1">
-                    <h3 className={`font-black text-lg uppercase tracking-wide ${dailyComplete ? 'text-gray-500' : 'text-gray-800'}`}>
+                    <h3 className={`font-black text-lg uppercase tracking-wide flex items-center gap-2 ${dailyComplete ? 'text-gray-500' : 'text-gray-800'}`}>
                       {dailyComplete ? "Daily Complete!" : "Daily Challenge"}
+                      {!dailyComplete && <span className="text-[10px] bg-red-500 text-white px-2 py-0.5 rounded-full animate-pulse">NEW</span>}
                     </h3>
                     <div className="flex items-center gap-2 text-sm font-bold">
                       <span className={`flex items-center gap-1 ${user.streak.current > 0 ? 'text-orange-500' : 'text-gray-400'}`}>
@@ -198,29 +201,24 @@ export const App: React.FC = () => {
         <TeacherDashboard onClose={() => setShowTeacherDashboard(false)} />
       )}
 
-      <div className="flex flex-col lg:flex-row gap-6 items-start transition-all duration-500">
-        <div className={`w-full transition-all duration-500 ${showLiveRoom ? 'lg:w-2/3' : 'lg:w-full'}`}>
-          {currentMode === GameMode.MENU ? renderMenu() : (
-            <GameContainer 
-              mode={currentMode} 
-              user={user}
-              onExit={handleExitGame}
-              onScoreUpdate={handleScoreUpdate}
-              onRewardClaimed={handleRewardClaimed}
-              isMultiplayer={isMultiplayer}
-            />
-          )}
+      {showLiveRoom && (
+        <div className="fixed bottom-4 right-4 z-50 w-96 h-64 shadow-2xl rounded-3xl overflow-hidden animate-in slide-in-from-bottom-10 border-4 border-white bg-black">
+           <LiveVideoRoom userName={user.name} onClose={() => setShowLiveRoom(false)} />
         </div>
+      )}
 
-        {showLiveRoom && (
-          <div className="w-full lg:w-1/3 h-[500px] lg:h-[600px] lg:sticky lg:top-24 animate-in slide-in-from-right-10 fade-in duration-500">
-            <LiveVideoRoom 
-              userName={user.name} 
-              onClose={() => setShowLiveRoom(false)} 
-            />
-          </div>
-        )}
-      </div>
+      {currentMode === GameMode.MENU ? renderMenu() : (
+        <div className="animate-in fade-in zoom-in-95 duration-500">
+          <GameContainer 
+            mode={currentMode} 
+            user={user} 
+            onExit={handleExitGame}
+            onScoreUpdate={handleScoreUpdate}
+            onRewardClaimed={handleRewardClaimed}
+            isMultiplayer={isMultiplayer}
+          />
+        </div>
+      )}
     </Layout>
   );
 };

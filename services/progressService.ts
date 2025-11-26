@@ -1,4 +1,3 @@
-
 import { UserProfile, AppTheme, MysteryReward } from '../types';
 
 const STORAGE_KEY = 'ai_quest_user_v3';
@@ -108,7 +107,7 @@ export const unlockReward = (user: UserProfile, reward: MysteryReward): UserProf
   let updatedUser = { ...user };
 
   if (reward.type === 'XP') {
-    // XP is handled by addXpToUser, but we return the user structure here for consistency if needed
+    // XP is handled by addXpToUser caller
   } else if (reward.type === 'THEME') {
     const theme = reward.value as AppTheme;
     if (!user.inventory.themes.includes(theme)) {

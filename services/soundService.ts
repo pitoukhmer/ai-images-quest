@@ -12,7 +12,7 @@ const initAudio = () => {
   return audioCtx;
 };
 
-export const playSound = (type: 'click' | 'success' | 'pop' | 'error' | 'correct') => {
+export const playSound = (type: 'click' | 'success' | 'pop' | 'error' | 'correct' | 'levelup') => {
   try {
     const ctx = initAudio();
     // Check if context was created successfully
@@ -38,8 +38,7 @@ export const playSound = (type: 'click' | 'success' | 'pop' | 'error' | 'correct
         break;
 
       case 'correct':
-        // NEW 'Correct' Sound: A bright, cheerful major arpeggio (C Major 9)
-        // Designed to be very distinct for high scores (>80)
+        // Bright, cheerful major arpeggio (C Major 9)
         const notes = [523.25, 659.25, 783.99, 1046.50, 1318.51]; // C5, E5, G5, C6, E6
         notes.forEach((freq, i) => {
           const osc = ctx.createOscillator();
@@ -62,9 +61,51 @@ export const playSound = (type: 'click' | 'success' | 'pop' | 'error' | 'correct
         });
         break;
 
+      case 'levelup':
+        // Distinct "Level Up" Fanfare (Rapid rising scale + chord hit)
+        // Scale run
+        const scale = [523.25, 587.33, 659.25, 698.46, 783.99, 880.00, 987.77, 1046.50]; // C Major Scale
+        scale.forEach((freq, i) => {
+           const osc = ctx.createOscillator();
+           const gain = ctx.createGain();
+           osc.connect(gain);
+           gain.connect(ctx.destination);
+           
+           osc.type = 'triangle';
+           const startTime = now + (i * 0.05);
+           osc.frequency.setValueAtTime(freq, startTime);
+           
+           gain.gain.setValueAtTime(0, startTime);
+           gain.gain.linearRampToValueAtTime(0.1, startTime + 0.02);
+           gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.1);
+           
+           osc.start(startTime);
+           osc.stop(startTime + 0.15);
+        });
+        
+        // Final Chord Hit (C Major)
+        const chord = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+        const chordStart = now + (scale.length * 0.05);
+        chord.forEach((freq) => {
+           const osc = ctx.createOscillator();
+           const gain = ctx.createGain();
+           osc.connect(gain);
+           gain.connect(ctx.destination);
+           
+           osc.type = 'sine';
+           osc.frequency.setValueAtTime(freq, chordStart);
+           
+           gain.gain.setValueAtTime(0, chordStart);
+           gain.gain.linearRampToValueAtTime(0.2, chordStart + 0.05); // Louder punch
+           gain.gain.exponentialRampToValueAtTime(0.001, chordStart + 1.5); // Long tail
+           
+           osc.start(chordStart);
+           osc.stop(chordStart + 1.5);
+        });
+        break;
+
       case 'success':
-        // "Level Up" Sound (Simpler 2-part harmony)
-        // Note 1
+        // Simpler 2-part harmony for regular success
         const oscS1 = ctx.createOscillator();
         const gainS1 = ctx.createGain();
         oscS1.connect(gainS1);
@@ -79,7 +120,6 @@ export const playSound = (type: 'click' | 'success' | 'pop' | 'error' | 'correct
         oscS1.start(now);
         oscS1.stop(now + 0.5);
 
-        // Note 2 (Slide)
         const oscS2 = ctx.createOscillator();
         const gainS2 = ctx.createGain();
         oscS2.connect(gainS2);
@@ -127,7 +167,6 @@ export const playSound = (type: 'click' | 'success' | 'pop' | 'error' | 'correct
         break;
     }
   } catch (e) {
-    // Ignore audio errors (e.g. if blocked by browser policy before interaction)
     console.warn("Audio playback failed", e);
   }
 };

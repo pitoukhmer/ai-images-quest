@@ -1,4 +1,3 @@
-
 import { MysteryReward, AppTheme, UserProfile, GameMode } from "../types";
 
 // Helper to check if user already has everything

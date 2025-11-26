@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { GameMode, GameState, EvaluationResult, MysteryReward, UserProfile } from '../types';
 import { Button, Card, Input, ImageViewer, LoadingOverlay, ScoreBadge, Confetti } from './Shared';
@@ -10,17 +9,18 @@ import {
   generateEmojis
 } from '../services/geminiService';
 import { getDailyChallengePrompt, markDailyChallengeComplete } from '../services/progressService';
-import { ArrowRight, RefreshCw, Home, Clock, Lightbulb, Repeat, Calendar, Swords } from 'lucide-react';
+import { getRandomTip } from '../services/gameEventsService';
+import { ArrowRight, RefreshCw, Home, Clock, Lightbulb, Repeat, Calendar, Swords, HelpCircle } from 'lucide-react';
 import { playSound } from '../services/soundService';
 import { geminiLiveService } from '../services/geminiLiveService';
 import { MysteryBox } from './MysteryBox';
 
 interface GameContainerProps {
   mode: GameMode;
-  user: UserProfile; // Added user prop
+  user: UserProfile;
   onExit: () => void;
   onScoreUpdate: (points: number) => void;
-  onRewardClaimed: (reward: MysteryReward) => void; // New Handler
+  onRewardClaimed: (reward: MysteryReward) => void;
   isMultiplayer?: boolean;
 }
 
@@ -47,6 +47,25 @@ export const GameContainer: React.FC<GameContainerProps> = ({ mode, user, onExit
   const [isTimerActive, setIsTimerActive] = useState(false);
   const [showMysteryBox, setShowMysteryBox] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
+  const [showHint, setShowHint] = useState(false);
+  
+  // Tip Rotation State
+  const [currentTip, setCurrentTip] = useState("");
+  const [tipFade, setTipFade] = useState(false);
+
+  // Tip Rotation Effect
+  useEffect(() => {
+    setCurrentTip(getRandomTip(mode));
+    const interval = setInterval(() => {
+      setTipFade(true); 
+      setTimeout(() => {
+        setCurrentTip(getRandomTip(mode)); 
+        setTipFade(false); 
+      }, 500);
+    }, 8000); 
+
+    return () => clearInterval(interval);
+  }, [mode]);
 
   useEffect(() => {
     initializeRound();
@@ -74,6 +93,7 @@ export const GameContainer: React.FC<GameContainerProps> = ({ mode, user, onExit
     setTimer(30);
     setIsTimerActive(false);
     setShowConfetti(false);
+    setShowHint(false);
 
     try {
       if (mode === GameMode.GUESS_PROMPT) {
@@ -174,7 +194,6 @@ export const GameContainer: React.FC<GameContainerProps> = ({ mode, user, onExit
         }));
       } else {
         geminiLiveService.sendContext(`User scored ${result.score}.`);
-        // Mystery Box Trigger for Good Scores (or Daily Challenge)
         if ((mode === GameMode.DAILY_CHALLENGE && result.score > 60) || (result.score > 75)) {
           if (mode === GameMode.DAILY_CHALLENGE) markDailyChallengeComplete();
           setTimeout(() => setShowMysteryBox(true), 1000);
@@ -205,7 +224,15 @@ export const GameContainer: React.FC<GameContainerProps> = ({ mode, user, onExit
 
   const handleMysteryBoxClose = (reward: MysteryReward) => {
     setShowMysteryBox(false);
-    onRewardClaimed(reward); // Pass reward up to App to handle unlocking
+    onRewardClaimed(reward);
+  };
+
+  const getHintText = () => {
+    if (!state.targetPrompt) return "";
+    return state.targetPrompt.split(' ').map((word, index) => {
+      if (index % 2 !== 0) return "___";
+      return word;
+    }).join(' ');
   };
 
   return (
@@ -253,7 +280,6 @@ export const GameContainer: React.FC<GameContainerProps> = ({ mode, user, onExit
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
-        {/* Left: Image */}
         <div className="flex flex-col gap-4">
           <ImageViewer 
             src={state.currentImage} 
@@ -264,7 +290,6 @@ export const GameContainer: React.FC<GameContainerProps> = ({ mode, user, onExit
           )}
         </div>
 
-        {/* Right: Controls */}
         <div className="flex flex-col justify-center h-full">
            {!evaluation ? (
              <div className="space-y-6">
@@ -275,14 +300,30 @@ export const GameContainer: React.FC<GameContainerProps> = ({ mode, user, onExit
                <Card className="bg-sky-50/50 border-none">
                  <div className="flex items-start gap-3">
                    <Lightbulb className="text-yellow-500 mt-1 flex-shrink-0" />
-                   <div>
-                     <h4 className="font-bold text-gray-700">Tip:</h4>
-                     <p className="text-sm text-gray-600">
-                       {(mode === GameMode.GUESS_PROMPT || mode === GameMode.DAILY_CHALLENGE) && "Focus on colors, main objects, and the setting."}
-                       {mode === GameMode.FIX_MISTAKE && "Be specific! Tell the AI exactly what to change."}
-                       {mode === GameMode.EMOJI_CHALLENGE && "Try to weave a story that connects all the emojis."}
-                       {mode === GameMode.FASTEST_CHALLENGE && "Don't overthink it, just type fast!"}
+                   <div className="flex-1">
+                     <h4 className="font-bold text-gray-700 text-xs uppercase tracking-wide mb-1">Smart Tip:</h4>
+                     <p className={`text-sm text-gray-600 font-medium transition-opacity duration-500 ${tipFade ? 'opacity-0' : 'opacity-100'}`}>
+                       {currentTip}
                      </p>
+                     
+                     {(mode === GameMode.GUESS_PROMPT || mode === GameMode.DAILY_CHALLENGE) && (
+                       <div className="pt-2 mt-2 border-t border-sky-200">
+                         {!showHint ? (
+                           <button 
+                             onClick={() => { setShowHint(true); playSound('click'); }}
+                             className="text-xs font-bold text-sky-600 flex items-center gap-1 hover:text-sky-800 hover:underline transition-colors"
+                           >
+                             <HelpCircle size={14} /> Need a hint?
+                           </button>
+                         ) : (
+                           <div className="animate-in fade-in duration-300 bg-white/50 p-2 rounded-lg">
+                             <span className="text-xs font-black text-sky-700 uppercase block mb-1">Hint:</span>
+                             <p className="text-sm font-mono text-sky-800 tracking-wide">{getHintText()}</p>
+                           </div>
+                         )}
+                       </div>
+                     )}
+
                    </div>
                  </div>
                </Card>
