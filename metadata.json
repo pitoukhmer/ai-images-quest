@@ -1,0 +1,8 @@
+{
+  "name": "AI Image Quest - ChatGPT",
+  "description": "A fun, colorful, and safe creative game for students to explore AI image generation through puzzles and challenges.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
